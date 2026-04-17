@@ -32,6 +32,24 @@
 
 这样一来，我们通过 org-capture 的这个 templates ，就可以输入一个字符串，并在关闭的时候（其实是关闭之前）自动设置其 =SCHEDULED= 时间。
 
+省流使用例如下：
+#+begin_src elisp
+(use-package org-smart-get-chn-time :demand t
+  :vc (:url "git@github.com:TomoeMami/org-smart-get-chn-time.el.git"
+            :rev :newest)
+  :config
+  (defun my/capture-dida-auto-schedule ()
+    (org-schedule nil (or (org-sgct-get-time (org-get-heading t t t t)) ""))))
+
+(use-package doct :demand t
+  :config
+  (setq org-capture-templates
+      (doct '(("Todo" :keys "c"
+               :file my-org-timeline
+               :template ("* TODO %?")
+               :before-finalize my/capture-dida-auto-schedule)))))
+#+end_src
+
 如果读者在使用过程中发现了未覆盖到的、识别错误的中文时间，也麻烦反馈给我，我个人的测试覆盖面有限。
 * 测试用例
 #+begin_src elisp :results value
