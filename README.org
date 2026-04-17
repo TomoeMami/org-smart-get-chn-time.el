@@ -1,0 +1,107 @@
+#+title:      emacs-智能识别org-heading里的中文时间戳
+#+date:       [2026-04-16 周四 16:56]
+#+filetags:   :blog:
+#+identifier: 20260416T165615
+
+[2026-04-16 周四 16:56]
+
+曾经用过滴答清单的用户一定知道，滴答清单有一项[[https://help.dida365.com/articles/7081931977951019008][智能识别]]功能，可以自动根据任务中的时间戳添加提醒。正巧，最近我也厌烦了每次手动添加任务的 =SCHEDULED= 时间，希望能更加智能一点。
+
+一说到智能识别，恐怕2026年的读者已经想到利用 LLM 了吧。但是滴答清单的识别功能远早于 LLM 出现，且速度远快于发送网络请求，目测是基于正则的匹配。因此我在 LLM 的帮助下，写了一段函数，用于提取输入字符串中的中文时间戳并自动设置。
+
+* 使用方法
+这里假定我们要在 org-capture 中使用。首先我们将 =org-smart-get-chn-time.el= 保存到本地，然后加载之，再定义一个函数，在关闭 capture-buffer 之前执行。这个函数会根据当前 org-heading ，提取其中包含的相对时间字符串，并直接用于 =org-schedule= 。 我这里设置的是如获取不到就设置 =SCHEDULED= 为当日。
+#+begin_src emacs-lisp
+(require 'org-smart-get-chn-time)
+
+(defun my/capture-dida-auto-schedule ()
+  (org-schedule nil (or (org-sgct-get-time (org-get-heading t t t t)) "")))
+#+end_src
+
+然后我们启用[[https://github.com/progfolio/doct][DOCT]]，以便更规范管理 =org-capture-templates= 。
+
+#+begin_src emacs-lisp
+(use-package doct :demand t
+  :config
+  (setq org-capture-templates
+      (doct '(("Todo" :keys "c"
+               :file my-org-timeline
+               :template ("* TODO %?")
+               :before-finalize my/capture-dida-auto-schedule)))))
+#+end_src
+
+这样一来，我们通过 org-capture 的这个 templates ，就可以输入一个字符串，并在关闭的时候（其实是关闭之前）自动设置其 =SCHEDULED= 时间。
+
+如果读者在使用过程中发现了未覆盖到的、识别错误的中文时间，也麻烦反馈给我，我个人的测试覆盖面有限。
+* 测试用例
+#+begin_src elisp :results value
+(let* ((test-cases '(("今天" . "+0d")
+                     ("明天" . "+1d")
+                     ("后天" . "+2d")
+                     ("周一" . "+Mon")
+                     ("3月" . "3-1")
+                     ("3月6日" . "3-6")
+                     ("上午9点" . "09:00")
+                     ("上午9点半" . "09:30")
+                     ("下午两点" . "14:00")
+                     ("七天后" . "+7d") 
+                     ("3月6日9点" . "3-6 09:00")
+                     ("3月6日下午9点" . "3-6 21:00")
+                     ("早上" . "07:00")
+                     ("上午" . "09:00")
+                     ("中午" . "12:00")
+                     ("下午" . "14:00")
+                     ("傍晚" . "18:00")
+                     ("晚上" . "20:00")
+                     ("5天后" . "+5d")
+                     ("5周后" . "+5w")
+                     ("5个月后" . "+5m")
+                     ("5年后" . "+5y")
+                     ("emacs" . "emacs"))) ; 这里模拟一个会失败的情况
+       (passed-count 0)
+       (failures '()))
+
+  ;; 遍历测试用例
+  (dolist (case test-cases)
+    (let* ((input (car case))
+           (expected (cdr case))
+           ;; 调用你的函数 XXX
+           (actual (org-sgct-get-time input)))
+      (if (string-equal actual expected)
+          (setq passed-count (1+ passed-count))
+        ;; 记录失败的详情：输入、预期、实际
+        (push (list input expected actual) failures))))
+
+  ;; 构造返回结果：先写统计信息，再写失败列表的表头和数据
+  (append
+   `(("统计" "数据")
+     hline
+     ("总计" ,(length test-cases))
+     ("成功" ,passed-count)
+     ("失败" ,(length failures))
+     ("" "")) ; 空行分隔
+   (if (null failures)
+       '(("结果" "所有测试均成功！"))
+     (append '(("失败输入" "应为" "实际")) ; 失败详情的表头
+             (reverse failures)))))
+#+end_src
+
+#+RESULTS:
+| 统计     |  数据 |      |
+|----------+-------+------|
+| 总计     |    23 |      |
+| 成功     |    22 |      |
+| 失败     |     1 |      |
+|          |       |      |
+| 失败输入 |  应为 | 实际 |
+| emacs    | emacs | nil  |
+
+结果： 
+| 统计     |  数据 |      |
+|----------+-------+------|
+| 总计     |    23 |      |
+| 成功     |    22 |      |
+| 失败     |     1 |      |
+|          |       |      |
+| 失败输入 |  应为 | 实际 |
+| emacs    | emacs | nil  |
