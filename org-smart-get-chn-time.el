@@ -79,9 +79,21 @@
         (setq start (+ (match-beginning 0) (length (number-to-string num))))))
     res))
 
+(defun org-sgct-expand-abbrev-string (str)
+  "识别字符串中的缩写并展开。"
+  (replace-regexp-in-string
+   "今早\\|明早\\|今晚\\|明晚"
+   (lambda (matched)
+     (cond ((string= matched "今早") "今天早上")
+           ((string= matched "明早") "明天早上")
+           ((string= matched "今晚") "今天晚上")
+           ((string= matched "明晚") "明天晚上")
+           (t matched)))
+   str))
+
 (defun org-sgct-get-time (str)
   "对于给定的字符串 STR，返回转换后的时间字符串（不带括号）。"
-  (let* ((work-str (org-sgct-digital-string str))
+  (let* ((work-str (org-sgct-expand-abbrev-string (org-sgct-digital-string str)))
          (now (decode-time (current-time)))
          (now-h (decoded-time-hour now))
          (now-dow (decoded-time-weekday now)) ;; 0是周日
@@ -141,7 +153,7 @@
             (period-explicit nil)) ;; 标记用户是否明确说了 上午/下午
         (cond
          ((string-match "\\(凌晨\\|早上\\|上午\\|中午\\)" work-str) 
-          (setq hour-shift 0 period-explicit (match-string 1 work-str)))
+          (setq period-explicit (match-string 1 work-str)))
          ((string-match "\\(下午\\|傍晚\\|晚上\\)" work-str) 
           (setq hour-shift 12 period-explicit (match-string 1 work-str))))
         (if (string-match "\\([0-9]+\\)点\\(半\\|[0-9]+分?\\)?" work-str)
@@ -149,17 +161,18 @@
                    (m-raw (match-string 2 work-str))
                    (m (cond ((not m-raw) 0) ((string= m-raw "半") 30) (t (string-to-number m-raw))))
                    (final-h (+ h hour-shift)))
-              ;; 只有在用户没说“上午/下午”且时间小于12时，才根据当前时间自动增加12小时
-              (when (and (not period-explicit) 
-                         (< final-h 12) 
-                         (< final-h now-h)
-                         (or (not res-date) (string= res-date "+0d")))
-                (setq final-h (+ final-h 12)))
+              ;; 只有在用户没说“上午/下午”且没有明确日期时
+              (when (and (not period-explicit)
+                         (member res-date '(nil "+0d"))
+                         (< final-h now-h))
+                (if (< (+ final-h 12) now-h)
+                    (setq res-date "+1d")
+                  (setq final-h (+ final-h 12))))
               (setq res-time (format "%02d:%02d" final-h m)))
           ;; 只有修饰词的情况
           (when period-explicit
             (setq res-time (pcase period-explicit
-                             ("凌晨"  "01:00")
+                             ("凌晨" "01:00")
                              ("早上" "07:00")
                              ("上午" "09:00")
                              ("中午" "12:00")
@@ -172,5 +185,6 @@
       (if (string-empty-p out)
           nil ;; 或者返回原始字符串
         out))))
+
 (provide 'org-smart-get-chn-time)
 ;;; org-smart-get-chn-time.el ends here
