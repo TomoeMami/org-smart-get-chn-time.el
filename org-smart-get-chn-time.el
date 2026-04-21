@@ -82,12 +82,14 @@
 (defun org-sgct-expand-abbrev-string (str)
   "识别字符串中的缩写并展开。"
   (replace-regexp-in-string
-   "今早\\|明早\\|今晚\\|明晚"
+   "今早\\|明早\\|今晚\\|明晚\\|个半小时\\|半小时"
    (lambda (matched)
      (cond ((string= matched "今早") "今天早上")
            ((string= matched "明早") "明天早上")
            ((string= matched "今晚") "今天晚上")
            ((string= matched "明晚") "明天晚上")
+           ((string= matched "个半小时") "小时30分钟")
+           ((string= matched "半小时") "30分钟")
            (t matched)))
    str))
 
