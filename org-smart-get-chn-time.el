@@ -1,8 +1,13 @@
-;;; org-smart-get-chn-time.el --- dida like -*- lexical-binding: t; -*-
+;;; org-smart-get-chn-time.el --- Org 中智能识别中文时间插件 -*- lexical-binding: t; -*-
 ;; Copyright (C) 2026 TomoeMami
 
 ;; Author: TomoeMami <trembleafterme@outlook.com>
 ;; Created: 2026.04.16
+
+;; URL: https://github.com/TomoeMami/org-smart-get-chn-time.el
+
+;; Version: 1.0.0
+;; Package-Requires: ((emacs "27.1"))
 
 ;; This file is not part of GNU Emacs.
 
@@ -19,10 +24,13 @@
 ;; You should have received a copy of the GNU General Public License
 ;; along with this file.  If not, see <https://www.gnu.org/licenses/>.
 
+;;; Commentary:
+;; Org 中智能识别中文时间插件
+
 ;;; Code:
 (require 'org)
 
-(defun org-sgct-chn2num (chn-str)
+(defun org-smart-get-chn-time-chn2num (chn-str)
   "将中文数字'零'到'九百九十九'转换为整数，支持'两'作为'二'的变体。"
   (save-match-data
     (let* ((num 0)
@@ -67,19 +75,19 @@
           10
         num))))
 
-(defun org-sgct-digital-string (str)
+(defun org-smart-get-chn-time-digital-string (str)
   "识别字符串中的中文数字并替换为阿拉伯数字。"
   (let ((re "[零一二两三四五六七八九十百]+")
         (res str)
         (start 0))
     (while (string-match re res start)
       (let* ((match-str (match-string 0 res))
-             (num (org-sgct-chn2num match-str)))
+             (num (org-smart-get-chn-time-chn2num match-str)))
         (setq res (replace-match (number-to-string num) t t res))
         (setq start (+ (match-beginning 0) (length (number-to-string num))))))
     res))
 
-(defun org-sgct-expand-abbrev-string (str)
+(defun org-smart-get-chn-time-expand-abbrev-string (str)
   "识别字符串中的缩写并展开。"
   (replace-regexp-in-string
    "今早\\|明早\\|今晚\\|明晚\\|个半小时\\|半小时"
@@ -93,9 +101,9 @@
            (t matched)))
    str))
 
-(defun org-sgct-get-time (str)
+(defun org-smart-get-chn-time-get-time (str)
   "对于给定的字符串 STR，返回转换后的时间字符串（不带括号）。"
-  (let* ((work-str (org-sgct-expand-abbrev-string (org-sgct-digital-string str)))
+  (let* ((work-str (org-smart-get-chn-time-expand-abbrev-string (org-smart-get-chn-time-digital-string str)))
          (now (decode-time (current-time)))
          (now-h (decoded-time-hour now))
          (now-dow (decoded-time-weekday now)) ;; 0是周日
@@ -154,9 +162,9 @@
       (let ((hour-shift 0)
             (period-explicit nil)) ;; 标记用户是否明确说了 上午/下午
         (cond
-         ((string-match "\\(凌晨\\|早上\\|上午\\|中午\\)" work-str) 
+         ((string-match "\\(凌晨\\|早上\\|上午\\|中午\\)" work-str)
           (setq period-explicit (match-string 1 work-str)))
-         ((string-match "\\(下午\\|傍晚\\|晚上\\)" work-str) 
+         ((string-match "\\(下午\\|傍晚\\|晚上\\)" work-str)
           (setq hour-shift 12 period-explicit (match-string 1 work-str))))
         (if (string-match "\\([0-9]+\\)点\\(半\\|[0-9]+分?\\)?" work-str)
             (let* ((h (string-to-number (match-string 1 work-str)))

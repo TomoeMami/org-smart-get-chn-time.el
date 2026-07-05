@@ -9,6 +9,22 @@
 
 一说到智能识别，恐怕2026年的读者已经想到利用 LLM 了吧。但是滴答清单的识别功能远早于 LLM 出现，且速度远快于发送网络请求，目测是基于正则的匹配。因此我在 LLM 的帮助下，写了一段函数，用于提取输入字符串中的中文时间戳并自动设置。
 
+* 安装方法
+在31之后的Emacs中，通过内置的vc方式下载：
+#+begin_src elisp
+(use-package org-smart-get-chn-time :demand t
+  :vc (:url "git@github.com:TomoeMami/org-smart-get-chn-time.el"
+            :rev :newest))
+#+end_src
+
+如果愿意从我的自建ELPA 安装：
+#+begin_src elisp
+(add-to-list 'package-archives
+                 '("TomoELPA" . "https://tomoemami.github.io/tomoelpa/snapshots/"))
+(list-packages)
+(package-install 'org-smart-get-chn-time)
+#+end_src
+
 * 使用方法
 这里假定我们要在 org-capture 中使用。首先我们将 =org-smart-get-chn-time.el= 保存到本地，然后加载之，再定义一个函数，在关闭 capture-buffer 之前执行。这个函数会根据当前 org-heading ，提取其中包含的相对时间字符串，并直接用于 =org-schedule= 。 我这里设置的是如获取不到就设置 =SCHEDULED= 为当日。
 #+begin_src emacs-lisp
