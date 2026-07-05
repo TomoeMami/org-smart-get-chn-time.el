@@ -1,4 +1,4 @@
-;;; org-smart-get-chn-time.el --- 类滴答清单，智能识别字符串中第一个中文时间戳 -*- lexical-binding: t; -*-
+;;; org-smart-get-chn-time.el --- dida like -*- lexical-binding: t; -*-
 ;; Copyright (C) 2026 TomoeMami
 
 ;; Author: TomoeMami <trembleafterme@outlook.com>
