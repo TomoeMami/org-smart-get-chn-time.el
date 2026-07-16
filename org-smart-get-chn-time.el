@@ -6,7 +6,7 @@
 
 ;; URL: https://github.com/TomoeMami/org-smart-get-chn-time.el
 
-;; Version: 1.0.0
+;; Package-Version: 1.0.1
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This file is not part of GNU Emacs.
@@ -130,14 +130,21 @@
             (setq res-time (format-time-string "%H:%M" (time-add (current-time) sec-offset)))))
 
       ;; 情况 2: 处理常规日期和时间
-      ;; A. 处理日期
+      ;; A. 处理日期（匹配成功后截断字符串，防止日期数字污染时间解析）
       (cond
        ;; 识别具体的 X月Y日 或 X月
        ((string-match "\\([0-9]+\\)月\\(\\([0-9]+\\)日\\)?" work-str)
-        (setq res-date (concat (match-string 1 work-str) "-" (or (match-string 3 work-str) "1"))))
-       ((string-match "今天" work-str) (setq res-date "+0d"))
-       ((string-match "明天" work-str) (setq res-date "+1d"))
-       ((string-match "后天" work-str) (setq res-date "+2d"))
+        (setq res-date (concat (match-string 1 work-str) "-" (or (match-string 3 work-str) "1")))
+        (setq work-str (substring work-str (match-end 0))))
+       ((string-match "今天" work-str)
+        (setq res-date "+0d")
+        (setq work-str (substring work-str (match-end 0))))
+       ((string-match "明天" work-str)
+        (setq res-date "+1d")
+        (setq work-str (substring work-str (match-end 0))))
+       ((string-match "后天" work-str)
+        (setq res-date "+2d")
+        (setq work-str (substring work-str (match-end 0))))
        ((string-match "\\(下+周\\|周\\|星期\\)\\([1-7一二三四五六日天]\\)" work-str)
         (let* ((is-next (cond ((string= (match-string 1 work-str) "下下周") 2)
                               ((string= (match-string 1 work-str) "下周") 1)
@@ -153,12 +160,13 @@
                (day-name (elt '("Sun" "Mon" "Tue" "Wed" "Thu" "Fri" "Sat") target-dow)))
           (if (not is-next)
               (setq res-date (concat "+" day-name))
-              ;; 逻辑：下周且目标日还没过则跳一周(+2Name)，否则即指下周(+Name)
-              (when (> target-dow now-dow)
-                (setq is-next (1+ is-next)))
-              (setq res-date (concat "+" (number-to-string is-next) day-name))))))
+            ;; 逻辑：下周且目标日还没过则跳一周(+2Name)，否则即指下周(+Name)
+            (when (> target-dow now-dow)
+              (setq is-next (1+ is-next)))
+            (setq res-date (concat "+" (number-to-string is-next) day-name))))
+        (setq work-str (substring work-str (match-end 0)))))
 
-      ;; B. 处理时间 (12小时/24小时逻辑与滴答清单相似)
+      ;; B. 处理时间（基于裁剪后的 work-str，避免读到日期中的数字）
       (let ((hour-shift 0)
             (period-explicit nil)) ;; 标记用户是否明确说了 上午/下午
         (cond
