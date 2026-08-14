@@ -31,7 +31,7 @@
 (require 'org-smart-get-chn-time)
 
 (defun my/capture-dida-auto-schedule ()
-  (org-schedule nil (or (org-sgct-get-time (org-get-heading t t t t)) "")))
+  (org-schedule nil (or (org-smart-get-chn-time-get-time (org-get-heading t t t t)) "")))
 #+end_src
 
 然后我们启用[[https://github.com/progfolio/doct][DOCT]]，以便更规范管理 =org-capture-templates= 。
@@ -55,7 +55,7 @@
             :rev :newest)
   :config
   (defun my/capture-dida-auto-schedule ()
-    (org-schedule nil (or (org-sgct-get-time (org-get-heading t t t t)) ""))))
+    (org-schedule nil (or (org-smart-get-chn-time-get-time (org-get-heading t t t t)) ""))))
 
 (use-package doct :demand t
   :config
@@ -81,6 +81,11 @@
                      ("七天后" . "+7d") 
                      ("3月6日9点" . "3-6 09:00")
                      ("3月6日下午9点" . "3-6 21:00")
+                     ;; 独立的 X日/X号：解析为从今天（含今天）起最近的下一个该日
+                     ("31日" . "+40d")
+                     ("31号" . "+40d")
+                     ("30日" . "+9d")
+                     ("21日" . "+0d")
                      ("早上" . "07:00")
                      ("上午" . "09:00")
                      ("中午" . "12:00")
@@ -107,7 +112,7 @@
       (let* ((input (car case))
              (expected (cdr case))
              ;; 调用你的函数 XXX
-             (actual (org-sgct-get-time input)))
+             (actual (org-smart-get-chn-time-get-time input)))
         (if (string-equal actual expected)
             (setq passed-count (1+ passed-count))
           ;; 记录失败的详情：输入、预期、实际
@@ -130,8 +135,8 @@
 #+RESULTS:
 | 统计     |  数据 |      |
 |----------+-------+------|
-| 总计     |    29 |      |
-| 成功     |    28 |      |
+| 总计     |    33 |      |
+| 成功     |    32 |      |
 | 失败     |     1 |      |
 |          |       |      |
 | 失败输入 |  应为 | 实际 |
