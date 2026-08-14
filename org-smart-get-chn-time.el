@@ -6,7 +6,7 @@
 
 ;; URL: https://github.com/TomoeMami/org-smart-get-chn-time.el
 
-;; Package-Version: 1.0.1
+;; Package-Version: 1.1.0
 ;; Package-Requires: ((emacs "27.1"))
 
 ;; This file is not part of GNU Emacs.
@@ -132,9 +132,26 @@
       ;; 情况 2: 处理常规日期和时间
       ;; A. 处理日期（匹配成功后截断字符串，防止日期数字污染时间解析）
       (cond
-       ;; 识别具体的 X月Y日 或 X月
-       ((string-match "\\([0-9]+\\)月\\(\\([0-9]+\\)日\\)?" work-str)
+       ;; 识别具体的 X月Y日/X月Y号 或 X月
+       ((string-match "\\([0-9]+\\)月\\(\\([0-9]+\\)\\(日\\|号\\)\\)?" work-str)
         (setq res-date (concat (match-string 1 work-str) "-" (or (match-string 3 work-str) "1")))
+        (setq work-str (substring work-str (match-end 0))))
+       ;; 识别独立的 X日/X号（无月份），解析为从今天（含今天）起最近的下一个该日
+       ((string-match "\\([0-9]+\\)\\(日\\|号\\)" work-str)
+        (let* ((target-day (string-to-number (match-string 1 work-str)))
+               (now (decode-time (current-time)))
+               (cand (encode-time 0 0 0 (decoded-time-day now)
+                                  (decoded-time-month now)
+                                  (decoded-time-year now)))
+               (days-ahead 0))
+          (when (and (>= target-day 1) (<= target-day 31))
+            (while (not (= (decoded-time-day (decode-time cand)) target-day))
+              (setq days-ahead (1+ days-ahead))
+              (let ((dc (decode-time cand)))
+                (setq cand (encode-time 0 0 0 (1+ (decoded-time-day dc))
+                                        (decoded-time-month dc)
+                                        (decoded-time-year dc)))))
+            (setq res-date (format "+%dd" days-ahead))))
         (setq work-str (substring work-str (match-end 0))))
        ((string-match "今天" work-str)
         (setq res-date "+0d")
