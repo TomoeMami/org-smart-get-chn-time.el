@@ -10,23 +10,36 @@
 一说到智能识别，恐怕2026年的读者已经想到利用 LLM 了吧。但是滴答清单的识别功能远早于 LLM 出现，且速度远快于发送网络请求，目测是基于正则的匹配。因此我在 LLM 的帮助下，写了一段函数，用于提取输入字符串中的中文时间戳并自动设置。
 
 * 安装方法
-在31之后的Emacs中，通过内置的vc方式下载：
+** 方式一：通过 TomoELPA 安装（推荐）
+TomoELPA 是我自己维护的 ELPA 源。把下面这段配置加入 init 文件，即可完成添加源、刷新索引、安装并加载：
 #+begin_src elisp
-(use-package org-smart-get-chn-time :demand t
-  :vc (:url "git@github.com:TomoeMami/org-smart-get-chn-time.el"
+(require 'package)
+(add-to-list 'package-archives
+             '("TomoELPA" . "https://tomoemami.github.io/tomoelpa/snapshots/") t)
+
+;; 首次安装时执行一次；装好之后可以删掉这一行
+(package-refresh-contents)
+
+(use-package org-smart-get-chn-time
+  :ensure t
+  :demand t)
+#+end_src
+
+=:ensure t= 会在包未安装时自动从 TomoELPA 安装；=package-refresh-contents= 只在首次安装或需要同步索引时执行，不必每次启动都跑。也可以直接 =M-x package-install RET org-smart-get-chn-time= 手动安装。以后升级用 =M-x package-upgrade= 或 =M-x package-upgrade-all=（较老的 Emacs 可在 =list-packages= 中按 =U= 升级）。
+
+** 方式二：通过 use-package 的 =:vc= 关键字安装
+如果不想添加 ELPA 源，且 Emacs 为 30 及以上（或已升级到支持 =:vc= 的 use-package），可以用 =:vc= 直接从 Git 仓库下载源码。需要本机已安装 =git=：
+#+begin_src emacs-lisp
+(use-package org-smart-get-chn-time
+  :demand t
+  :vc (:url "https://github.com/TomoeMami/org-smart-get-chn-time.el.git"
             :rev :newest))
 #+end_src
 
-如果愿意从我的自建ELPA 安装：
-#+begin_src elisp
-(add-to-list 'package-archives
-                 '("TomoELPA" . "https://tomoemami.github.io/tomoelpa/snapshots/"))
-(list-packages)
-(package-install 'org-smart-get-chn-time)
-#+end_src
+=:rev= 缺省时 =package-vc= 会尝试检出最近一次 release；本仓库目前没有打 tag，所以这里用 =:rev :newest= 跟踪默认分支的最新提交。如果要固定版本，可以把 =:rev= 换成具体的 tag 或 commit。用 =:vc= 安装的包同样由 package.el 管理，之后可用 =M-x package-upgrade= 升级。两种安装方式二选一即可。
 
 * 使用方法
-这里假定我们要在 org-capture 中使用。首先我们将 =org-smart-get-chn-time.el= 保存到本地，然后加载之，再定义一个函数，在关闭 capture-buffer 之前执行。这个函数会根据当前 org-heading ，提取其中包含的相对时间字符串，并直接用于 =org-schedule= 。 我这里设置的是如获取不到就设置 =SCHEDULED= 为当日。
+这里假定我们要在 org-capture 中使用。按上面的方式安装后，我们先加载 =org-smart-get-chn-time=，再定义一个函数，在关闭 capture-buffer 之前执行。这个函数会根据当前 org-heading ，提取其中包含的相对时间字符串，并直接用于 =org-schedule= 。 我这里设置的是如获取不到就设置 =SCHEDULED= 为当日。
 #+begin_src emacs-lisp
 (require 'org-smart-get-chn-time)
 
@@ -48,11 +61,11 @@
 
 这样一来，我们通过 org-capture 的这个 templates ，就可以输入一个字符串，并在关闭的时候（其实是关闭之前）自动设置其 =SCHEDULED= 时间。
 
-省流使用例如下：
+省流使用例如下（需先在 init 中按「方式一」添加 TomoELPA 源并刷新索引）：
 #+begin_src elisp
-(use-package org-smart-get-chn-time :demand t
-  :vc (:url "git@github.com:TomoeMami/org-smart-get-chn-time.el.git"
-            :rev :newest)
+(use-package org-smart-get-chn-time
+  :ensure t
+  :demand t
   :config
   (defun my/capture-dida-auto-schedule ()
     (org-schedule nil (or (org-smart-get-chn-time-get-time (org-get-heading t t t t)) ""))))
