@@ -25,7 +25,7 @@ TomoELPA 是我自己维护的 ELPA 源。把下面这段配置加入 init 文�
   :demand t)
 #+end_src
 
-=:ensure t= 会在包未安装时自动从 TomoELPA 安装；=package-refresh-contents= 只在首次安装或需要同步索引时执行，不必每次启动都跑。也可以直接 =M-x package-install RET org-smart-get-chn-time= 手动安装。以后升级用 =M-x package-upgrade= 或 =M-x package-upgrade-all=（较老的 Emacs 可在 =list-packages= 中按 =U= 升级）。
+=:ensure t= 会在包未安装时自动从 TomoELPA 安装； =package-refresh-contents= 只在首次安装或需要同步索引时执行，不必每次启动都跑。也可以直接 =M-x package-install RET org-smart-get-chn-time= 手动安装。以后升级用 =M-x package-upgrade= 或 =M-x package-upgrade-all=（较老的 Emacs 可在 =list-packages= 中按 =U= 升级）。
 
 ** 方式二：通过 use-package 的 =:vc= 关键字安装
 如果不想添加 ELPA 源，且 Emacs 为 30 及以上（或已升级到支持 =:vc= 的 use-package），可以用 =:vc= 直接从 Git 仓库下载源码。需要本机已安装 =git=：
